@@ -14,7 +14,460 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      customer_addresses: {
+        Row: {
+          address: string
+          created_at: string | null
+          customer_id: string
+          id: string
+          is_default: boolean | null
+          latitude: number | null
+          longitude: number | null
+        }
+        Insert: {
+          address: string
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          is_default?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+        }
+        Update: {
+          address?: string
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          is_default?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_addresses_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mechanic_achievements: {
+        Row: {
+          achievement_name: string
+          achievement_type: string
+          count: number | null
+          earned_at: string | null
+          id: string
+          mechanic_id: string
+        }
+        Insert: {
+          achievement_name: string
+          achievement_type: string
+          count?: number | null
+          earned_at?: string | null
+          id?: string
+          mechanic_id: string
+        }
+        Update: {
+          achievement_name?: string
+          achievement_type?: string
+          count?: number | null
+          earned_at?: string | null
+          id?: string
+          mechanic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mechanic_achievements_mechanic_id_fkey"
+            columns: ["mechanic_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mechanic_services: {
+        Row: {
+          created_at: string | null
+          id: string
+          mechanic_id: string
+          service_type_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          mechanic_id: string
+          service_type_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          mechanic_id?: string
+          service_type_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mechanic_services_mechanic_id_fkey"
+            columns: ["mechanic_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mechanic_services_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mechanic_settings: {
+        Row: {
+          created_at: string | null
+          dark_mode: boolean | null
+          id: string
+          location_sharing: boolean | null
+          mechanic_id: string
+          push_notifications: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dark_mode?: boolean | null
+          id?: string
+          location_sharing?: boolean | null
+          mechanic_id: string
+          push_notifications?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dark_mode?: boolean | null
+          id?: string
+          location_sharing?: boolean | null
+          mechanic_id?: string
+          push_notifications?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mechanic_settings_mechanic_id_fkey"
+            columns: ["mechanic_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mechanic_shops: {
+        Row: {
+          average_rating: number | null
+          created_at: string | null
+          gst_number: string | null
+          hourly_rate: number | null
+          id: string
+          is_online: boolean | null
+          jobs_completed: number | null
+          latitude: number | null
+          longitude: number | null
+          mechanic_id: string
+          response_rate: number | null
+          shop_address: string
+          shop_description: string | null
+          shop_name: string
+          total_earnings: number | null
+          total_reviews: number | null
+          updated_at: string | null
+          whatsapp_number: string | null
+          years_of_experience: number | null
+        }
+        Insert: {
+          average_rating?: number | null
+          created_at?: string | null
+          gst_number?: string | null
+          hourly_rate?: number | null
+          id?: string
+          is_online?: boolean | null
+          jobs_completed?: number | null
+          latitude?: number | null
+          longitude?: number | null
+          mechanic_id: string
+          response_rate?: number | null
+          shop_address: string
+          shop_description?: string | null
+          shop_name: string
+          total_earnings?: number | null
+          total_reviews?: number | null
+          updated_at?: string | null
+          whatsapp_number?: string | null
+          years_of_experience?: number | null
+        }
+        Update: {
+          average_rating?: number | null
+          created_at?: string | null
+          gst_number?: string | null
+          hourly_rate?: number | null
+          id?: string
+          is_online?: boolean | null
+          jobs_completed?: number | null
+          latitude?: number | null
+          longitude?: number | null
+          mechanic_id?: string
+          response_rate?: number | null
+          shop_address?: string
+          shop_description?: string | null
+          shop_name?: string
+          total_earnings?: number | null
+          total_reviews?: number | null
+          updated_at?: string | null
+          whatsapp_number?: string | null
+          years_of_experience?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mechanic_shops_mechanic_id_fkey"
+            columns: ["mechanic_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          related_request_id: string | null
+          title: string
+          type: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          related_request_id?: string | null
+          title: string
+          type?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          related_request_id?: string | null
+          title?: string
+          type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_related_request_id_fkey"
+            columns: ["related_request_id"]
+            isOneToOne: false
+            referencedRelation: "service_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string
+          id: string
+          phone_number: string | null
+          updated_at: string | null
+          user_type: Database["public"]["Enums"]["user_type"]
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name: string
+          id: string
+          phone_number?: string | null
+          updated_at?: string | null
+          user_type?: Database["public"]["Enums"]["user_type"]
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          phone_number?: string | null
+          updated_at?: string | null
+          user_type?: Database["public"]["Enums"]["user_type"]
+        }
+        Relationships: []
+      }
+      ratings: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          id: string
+          mechanic_id: string
+          rating: number
+          review: string | null
+          service_request_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          mechanic_id: string
+          rating: number
+          review?: string | null
+          service_request_id: string
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          mechanic_id?: string
+          rating?: number
+          review?: string | null
+          service_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ratings_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ratings_mechanic_id_fkey"
+            columns: ["mechanic_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ratings_service_request_id_fkey"
+            columns: ["service_request_id"]
+            isOneToOne: true
+            referencedRelation: "service_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_requests: {
+        Row: {
+          accepted_at: string | null
+          completed_at: string | null
+          created_at: string | null
+          customer_address: string
+          customer_id: string
+          customer_latitude: number | null
+          customer_longitude: number | null
+          description: string | null
+          estimated_cost: number | null
+          final_cost: number | null
+          id: string
+          mechanic_id: string | null
+          service_type_id: string
+          status: Database["public"]["Enums"]["service_status"] | null
+          updated_at: string | null
+          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Insert: {
+          accepted_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          customer_address: string
+          customer_id: string
+          customer_latitude?: number | null
+          customer_longitude?: number | null
+          description?: string | null
+          estimated_cost?: number | null
+          final_cost?: number | null
+          id?: string
+          mechanic_id?: string | null
+          service_type_id: string
+          status?: Database["public"]["Enums"]["service_status"] | null
+          updated_at?: string | null
+          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Update: {
+          accepted_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          customer_address?: string
+          customer_id?: string
+          customer_latitude?: number | null
+          customer_longitude?: number | null
+          description?: string | null
+          estimated_cost?: number | null
+          final_cost?: number | null
+          id?: string
+          mechanic_id?: string | null
+          service_type_id?: string
+          status?: Database["public"]["Enums"]["service_status"] | null
+          updated_at?: string | null
+          vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_requests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_requests_mechanic_id_fkey"
+            columns: ["mechanic_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_requests_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_types: {
+        Row: {
+          created_at: string | null
+          icon: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +476,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      service_status:
+        | "pending"
+        | "accepted"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+      user_type: "customer" | "mechanic"
+      vehicle_type: "car" | "bike" | "electric" | "battery" | "tyre" | "general"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +610,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      service_status: [
+        "pending",
+        "accepted",
+        "in_progress",
+        "completed",
+        "cancelled",
+      ],
+      user_type: ["customer", "mechanic"],
+      vehicle_type: ["car", "bike", "electric", "battery", "tyre", "general"],
+    },
   },
 } as const
