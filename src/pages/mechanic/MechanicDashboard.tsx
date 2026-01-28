@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { AnimatedCard, StaggerContainer, StaggerItem } from '@/components/ui/animated-card';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { ChatWindow, ChatButton } from '@/components/chat/ChatWindow';
+import { WorkMediaUpload } from '@/components/media/WorkMediaUpload';
+import { InvoiceGenerator } from '@/components/invoice/InvoiceGenerator';
 import { 
   LayoutDashboard, 
   Bell, 
@@ -23,9 +29,19 @@ import {
   MessageSquare,
   Check,
   Loader2,
-  MapPin
+  MapPin,
+  Camera,
+  FileText,
+  Phone,
+  X
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface ShopData {
   id: string;
@@ -49,6 +65,7 @@ interface ServiceRequest {
   created_at: string;
   customer_address: string;
   description: string;
+  customer_id: string;
   customer: {
     full_name: string;
     phone_number: string;
@@ -78,6 +95,13 @@ const MechanicDashboard = () => {
     email: '',
     phone_number: '',
   });
+  
+  // Modal states
+  const [selectedJob, setSelectedJob] = useState<ServiceRequest | null>(null);
+  const [showMediaUpload, setShowMediaUpload] = useState(false);
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [chatJob, setChatJob] = useState<ServiceRequest | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -90,7 +114,6 @@ const MechanicDashboard = () => {
     if (!user) return;
     
     try {
-      // Fetch shop data
       const { data: shopData } = await supabase
         .from('mechanic_shops')
         .select('*')
@@ -99,7 +122,6 @@ const MechanicDashboard = () => {
       
       setShop(shopData);
 
-      // Fetch profile
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
@@ -114,7 +136,6 @@ const MechanicDashboard = () => {
         });
       }
 
-      // Fetch pending requests
       const { data: pendingData } = await supabase
         .from('service_requests')
         .select(`
@@ -127,7 +148,6 @@ const MechanicDashboard = () => {
       
       setPendingRequests(pendingData || []);
 
-      // Fetch active jobs for this mechanic
       const { data: activeData } = await supabase
         .from('service_requests')
         .select(`
@@ -141,7 +161,6 @@ const MechanicDashboard = () => {
       
       setActiveJobs(activeData || []);
 
-      // Fetch notifications
       const { data: notifData } = await supabase
         .from('notifications')
         .select('*')
@@ -151,7 +170,6 @@ const MechanicDashboard = () => {
       
       setNotifications(notifData || []);
 
-      // Fetch settings
       const { data: settingsData } = await supabase
         .from('mechanic_settings')
         .select('*')
@@ -160,9 +178,9 @@ const MechanicDashboard = () => {
       
       if (settingsData) {
         setSettings({
-          push_notifications: settingsData.push_notifications,
-          location_sharing: settingsData.location_sharing,
-          dark_mode: settingsData.dark_mode,
+          push_notifications: settingsData.push_notifications ?? true,
+          location_sharing: settingsData.location_sharing ?? true,
+          dark_mode: settingsData.dark_mode ?? false,
         });
       }
     } catch (error) {
@@ -256,14 +274,26 @@ const MechanicDashboard = () => {
     }
   };
 
-  const completeJob = async (requestId: string) => {
+  const openJobWorkflow = (job: ServiceRequest) => {
+    setSelectedJob(job);
+    setShowMediaUpload(true);
+  };
+
+  const proceedToInvoice = () => {
+    setShowMediaUpload(false);
+    setShowInvoice(true);
+  };
+
+  const completeJobWithInvoice = async (invoiceId: string) => {
+    if (!selectedJob) return;
+
     const { error } = await supabase
       .from('service_requests')
       .update({ 
         status: 'completed',
         completed_at: new Date().toISOString()
       })
-      .eq('id', requestId);
+      .eq('id', selectedJob.id);
 
     if (error) {
       toast({
@@ -274,10 +304,17 @@ const MechanicDashboard = () => {
     } else {
       toast({
         title: 'Job Completed!',
-        description: 'Great work! The customer can now rate your service.',
+        description: 'Invoice has been sent to the customer.',
       });
+      setShowInvoice(false);
+      setSelectedJob(null);
       fetchData();
     }
+  };
+
+  const openChat = (job: ServiceRequest) => {
+    setChatJob(job);
+    setShowChat(true);
   };
 
   const updateSettings = async (key: string, value: boolean) => {
@@ -325,8 +362,13 @@ const MechanicDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        >
+          <Loader2 className="h-12 w-12 text-primary" />
+        </motion.div>
       </div>
     );
   }
@@ -334,7 +376,11 @@ const MechanicDashboard = () => {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col">
+      <motion.aside 
+        initial={{ x: -280 }}
+        animate={{ x: 0 }}
+        className="w-64 bg-sidebar text-sidebar-foreground flex flex-col"
+      >
         <div className="p-6 border-b border-sidebar-border">
           <h1 className="text-xl font-bold flex items-center gap-2">
             <Star className="h-6 w-6 text-accent" />
@@ -343,331 +389,296 @@ const MechanicDashboard = () => {
         </div>
 
         <nav className="flex-1 p-4 space-y-2">
-          <button 
-            onClick={() => setActiveNav('dashboard')}
-            className={`nav-link w-full ${activeNav === 'dashboard' ? 'active' : ''}`}
-          >
-            <LayoutDashboard className="h-5 w-5" />
-            Dashboard
-          </button>
-          <button 
-            onClick={() => setActiveNav('notifications')}
-            className={`nav-link w-full ${activeNav === 'notifications' ? 'active' : ''}`}
-          >
-            <Bell className="h-5 w-5" />
-            Notifications
-            {notifications.filter(n => !n.is_read).length > 0 && (
-              <Badge className="ml-auto gradient-accent">{notifications.filter(n => !n.is_read).length}</Badge>
-            )}
-          </button>
-          <button 
-            onClick={() => setActiveNav('profile')}
-            className={`nav-link w-full ${activeNav === 'profile' ? 'active' : ''}`}
-          >
-            <User className="h-5 w-5" />
-            Profile
-          </button>
-          <button 
-            onClick={() => setActiveNav('settings')}
-            className={`nav-link w-full ${activeNav === 'settings' ? 'active' : ''}`}
-          >
-            <Settings className="h-5 w-5" />
-            Settings
-          </button>
+          {[
+            { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+            { id: 'notifications', icon: Bell, label: 'Notifications', badge: notifications.filter(n => !n.is_read).length },
+            { id: 'profile', icon: User, label: 'Profile' },
+            { id: 'settings', icon: Settings, label: 'Settings' },
+          ].map((item) => (
+            <motion.button
+              key={item.id}
+              whileHover={{ x: 4 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setActiveNav(item.id)}
+              className={`nav-link w-full ${activeNav === item.id ? 'active' : ''}`}
+            >
+              <item.icon className="h-5 w-5" />
+              {item.label}
+              {item.badge ? (
+                <Badge className="ml-auto gradient-accent">{item.badge}</Badge>
+              ) : null}
+            </motion.button>
+          ))}
         </nav>
 
         <div className="p-4 border-t border-sidebar-border">
-          <button onClick={handleSignOut} className="nav-link w-full text-destructive hover:bg-destructive/10">
+          <motion.button
+            whileHover={{ x: 4 }}
+            onClick={handleSignOut}
+            className="nav-link w-full text-destructive hover:bg-destructive/10"
+          >
             <LogOut className="h-5 w-5" />
             Sign Out
-          </button>
+          </motion.button>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Main Content */}
       <main className="flex-1 p-8 overflow-auto">
-        {activeNav === 'dashboard' && (
-          <div className="space-y-8 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <h2 className="text-3xl font-bold">Dashboard</h2>
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-muted-foreground">
-                  {shop?.is_online ? 'Online' : 'Offline'}
-                </span>
-                <Switch 
-                  checked={shop?.is_online || false} 
-                  onCheckedChange={toggleOnlineStatus}
-                  className="data-[state=checked]:bg-success"
-                />
-              </div>
-            </div>
-
-            {/* Stats Cards */}
-            <div className="grid grid-cols-4 gap-4">
-              <Card className="stat-card">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full gradient-success flex items-center justify-center">
-                      <DollarSign className="h-6 w-6 text-success-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold">₹{shop?.total_earnings || 0}</p>
-                      <p className="text-muted-foreground text-sm">Total Earnings</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="stat-card">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center">
-                      <Briefcase className="h-6 w-6 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold">{shop?.jobs_completed || 0}</p>
-                      <p className="text-muted-foreground text-sm">Jobs Completed</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="stat-card">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full gradient-accent flex items-center justify-center">
-                      <Star className="h-6 w-6 text-accent-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold">{shop?.average_rating?.toFixed(1) || '0.0'}</p>
-                      <p className="text-muted-foreground text-sm">{shop?.total_reviews || 0} Reviews</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="stat-card">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-warning/20 flex items-center justify-center">
-                      <Clock className="h-6 w-6 text-warning" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold">{shop?.response_rate || 0}%</p>
-                      <p className="text-muted-foreground text-sm">Response Rate</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Performance & Achievements */}
-            <div className="grid grid-cols-2 gap-6">
-              <Card className="stat-card">
-                <CardHeader>
-                  <CardTitle>Performance</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Customer Satisfaction</span>
-                    <span className="font-semibold text-success">
-                      {((shop?.average_rating || 0) / 5 * 100).toFixed(0)}%
+        <AnimatePresence mode="wait">
+          {activeNav === 'dashboard' && (
+            <motion.div
+              key="dashboard"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-8"
+            >
+              {/* Header with Online Toggle */}
+              <div className="flex items-center justify-between">
+                <motion.h2 
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="text-3xl font-bold"
+                >
+                  Dashboard
+                </motion.h2>
+                <div className="flex items-center gap-4">
+                  <NotificationBell />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center gap-3 bg-card rounded-full px-4 py-2 border border-border"
+                  >
+                    <span className={`w-2 h-2 rounded-full ${shop?.is_online ? 'bg-success animate-pulse' : 'bg-muted'}`} />
+                    <span className="text-sm font-medium">
+                      {shop?.is_online ? 'Online' : 'Offline'}
                     </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Online Completion</span>
-                    <span className="font-semibold text-primary">95%</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Repeat Customers</span>
-                    <span className="font-semibold text-accent">23</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="stat-card">
-                <CardHeader>
-                  <CardTitle>Achievements</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Award className="h-8 w-8 text-warning" />
-                    <div>
-                      <p className="font-semibold">Top Rated</p>
-                      <p className="text-sm text-muted-foreground">Rating above 4.5</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Zap className="h-8 w-8 text-primary" />
-                    <div>
-                      <p className="font-semibold">Fast Reply</p>
-                      <p className="text-sm text-muted-foreground">Response under 5 min</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Briefcase className="h-8 w-8 text-success" />
-                    <div>
-                      <p className="font-semibold">{shop?.jobs_completed || 0} Jobs Done</p>
-                      <p className="text-sm text-muted-foreground">Total completed</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Quick Status */}
-            <Card className="stat-card">
-              <CardHeader>
-                <CardTitle>Quick Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center p-4 bg-warning/10 rounded-lg">
-                    <p className="text-3xl font-bold text-warning">{pendingRequests.length}</p>
-                    <p className="text-sm text-muted-foreground">Pending Requests</p>
-                  </div>
-                  <div className="text-center p-4 bg-primary/10 rounded-lg">
-                    <p className="text-3xl font-bold text-primary">{activeJobs.length}</p>
-                    <p className="text-sm text-muted-foreground">Active Jobs</p>
-                  </div>
-                  <div className="text-center p-4 bg-success/10 rounded-lg">
-                    <p className="text-3xl font-bold text-success">{shop?.jobs_completed || 0}</p>
-                    <p className="text-sm text-muted-foreground">Completed</p>
-                  </div>
+                    <Switch 
+                      checked={shop?.is_online || false} 
+                      onCheckedChange={toggleOnlineStatus}
+                      className="data-[state=checked]:bg-success"
+                    />
+                  </motion.div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Shop Profile Card */}
-            {shop && (
-              <Card className="stat-card">
-                <CardHeader>
-                  <CardTitle>Your Shop Profile</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Shop Name</p>
-                      <p className="font-semibold">{shop.shop_name}</p>
+              {/* Stats Cards */}
+              <StaggerContainer className="grid grid-cols-4 gap-4">
+                {[
+                  { icon: DollarSign, value: `₹${shop?.total_earnings || 0}`, label: 'Total Earnings', gradient: 'gradient-success', color: 'text-success-foreground' },
+                  { icon: Briefcase, value: shop?.jobs_completed || 0, label: 'Jobs Completed', gradient: 'gradient-primary', color: 'text-primary-foreground' },
+                  { icon: Star, value: shop?.average_rating?.toFixed(1) || '0.0', sublabel: `${shop?.total_reviews || 0} Reviews`, gradient: 'gradient-accent', color: 'text-accent-foreground' },
+                  { icon: Clock, value: `${shop?.response_rate || 0}%`, label: 'Response Rate', gradient: 'bg-warning/20', color: 'text-warning', iconBg: false },
+                ].map((stat, index) => (
+                  <StaggerItem key={stat.label || stat.sublabel}>
+                    <AnimatedCard delay={index * 0.1} glow className="p-6">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-full ${stat.gradient} flex items-center justify-center`}>
+                          <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold">{stat.value}</p>
+                          <p className="text-muted-foreground text-sm">{stat.label || stat.sublabel}</p>
+                        </div>
+                      </div>
+                    </AnimatedCard>
+                  </StaggerItem>
+                ))}
+              </StaggerContainer>
+
+              {/* Performance & Quick Status */}
+              <div className="grid grid-cols-2 gap-6">
+                <AnimatedCard delay={0.3} className="p-6">
+                  <h3 className="font-semibold mb-4">Performance</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Customer Satisfaction</span>
+                      <motion.span 
+                        initial={{ width: 0 }}
+                        animate={{ width: '100%' }}
+                        className="font-semibold text-success"
+                      >
+                        {((shop?.average_rating || 0) / 5 * 100).toFixed(0)}%
+                      </motion.span>
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Hourly Rate</p>
-                      <p className="font-semibold">₹{shop.hourly_rate}/hr</p>
+                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(shop?.average_rating || 0) / 5 * 100}%` }}
+                        transition={{ delay: 0.5, duration: 0.8 }}
+                        className="h-full gradient-success rounded-full"
+                      />
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Address</p>
-                      <p className="font-semibold">{shop.shop_address}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Response Rate</span>
+                      <span className="font-semibold text-primary">{shop?.response_rate || 0}%</span>
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Experience</p>
-                      <p className="font-semibold">{shop.years_of_experience} years</p>
+                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${shop?.response_rate || 0}%` }}
+                        transition={{ delay: 0.6, duration: 0.8 }}
+                        className="h-full gradient-primary rounded-full"
+                      />
                     </div>
                   </div>
-                  {shop.shop_description && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Description</p>
-                      <p className="font-semibold">{shop.shop_description}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+                </AnimatedCard>
 
-            {/* Pending Service Requests */}
-            {pendingRequests.length > 0 && (
-              <Card className="stat-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                <AnimatedCard delay={0.4} className="p-6">
+                  <h3 className="font-semibold mb-4">Quick Status</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <motion.div 
+                      whileHover={{ scale: 1.05 }}
+                      className="text-center p-4 bg-warning/10 rounded-xl cursor-pointer"
+                    >
+                      <p className="text-3xl font-bold text-warning">{pendingRequests.length}</p>
+                      <p className="text-xs text-muted-foreground">Pending</p>
+                    </motion.div>
+                    <motion.div 
+                      whileHover={{ scale: 1.05 }}
+                      className="text-center p-4 bg-primary/10 rounded-xl cursor-pointer"
+                    >
+                      <p className="text-3xl font-bold text-primary">{activeJobs.length}</p>
+                      <p className="text-xs text-muted-foreground">Active</p>
+                    </motion.div>
+                    <motion.div 
+                      whileHover={{ scale: 1.05 }}
+                      className="text-center p-4 bg-success/10 rounded-xl cursor-pointer"
+                    >
+                      <p className="text-3xl font-bold text-success">{shop?.jobs_completed || 0}</p>
+                      <p className="text-xs text-muted-foreground">Done</p>
+                    </motion.div>
+                  </div>
+                </AnimatedCard>
+              </div>
+
+              {/* Pending Requests */}
+              {pendingRequests.length > 0 && (
+                <AnimatedCard delay={0.5} hover={false} className="p-6">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
                     <Bell className="h-5 w-5 text-warning" />
                     New Service Requests
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {pendingRequests.map((request) => (
-                    <div key={request.id} className="p-4 border border-border rounded-lg bg-warning/5">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h4 className="font-semibold">{request.service_type?.name}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {request.customer?.full_name}
-                          </p>
-                        </div>
-                        <Badge className="status-badge pending">Pending</Badge>
-                      </div>
-                      <p className="text-sm mb-3 flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        {request.customer_address}
-                      </p>
-                      {request.description && (
-                        <p className="text-sm text-muted-foreground mb-3">
-                          {request.description}
-                        </p>
-                      )}
-                      <Button 
-                        onClick={() => acceptJob(request.id)}
-                        className="w-full gradient-success"
+                  </h3>
+                  <div className="space-y-4">
+                    {pendingRequests.map((request, index) => (
+                      <motion.div
+                        key={request.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="p-4 border border-warning/30 rounded-xl bg-warning/5 hover:bg-warning/10 transition-colors"
                       >
-                        <Check className="mr-2 h-4 w-4" />
-                        Accept Job
-                      </Button>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h4 className="font-semibold">{request.service_type?.name}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {request.customer?.full_name}
+                            </p>
+                          </div>
+                          <Badge className="status-badge pending">Pending</Badge>
+                        </div>
+                        <p className="text-sm mb-3 flex items-center gap-1">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          {request.customer_address}
+                        </p>
+                        <Button 
+                          onClick={() => acceptJob(request.id)}
+                          className="w-full gradient-success"
+                        >
+                          <Check className="mr-2 h-4 w-4" />
+                          Accept Job
+                        </Button>
+                      </motion.div>
+                    ))}
+                  </div>
+                </AnimatedCard>
+              )}
 
-            {/* Active Jobs */}
-            {activeJobs.length > 0 && (
-              <Card className="stat-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+              {/* Active Jobs */}
+              {activeJobs.length > 0 && (
+                <AnimatedCard delay={0.6} hover={false} className="p-6">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
                     <Briefcase className="h-5 w-5 text-primary" />
                     Active Jobs
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {activeJobs.map((job) => (
-                    <div key={job.id} className="p-4 border border-border rounded-lg">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h4 className="font-semibold">{job.service_type?.name}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {job.customer?.full_name} • {job.customer?.phone_number}
-                          </p>
-                        </div>
-                        <Badge className="status-badge active">{job.status}</Badge>
-                      </div>
-                      <p className="text-sm mb-3 flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        {job.customer_address}
-                      </p>
-                      <Button 
-                        onClick={() => completeJob(job.id)}
-                        className="w-full gradient-primary"
+                  </h3>
+                  <div className="space-y-4">
+                    {activeJobs.map((job, index) => (
+                      <motion.div
+                        key={job.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="p-4 border border-primary/30 rounded-xl bg-primary/5"
                       >
-                        <Check className="mr-2 h-4 w-4" />
-                        Complete Job
-                      </Button>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h4 className="font-semibold">{job.service_type?.name}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {job.customer?.full_name}
+                            </p>
+                          </div>
+                          <Badge className="status-badge active">{job.status}</Badge>
+                        </div>
+                        <p className="text-sm mb-3 flex items-center gap-1">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          {job.customer_address}
+                        </p>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline"
+                            onClick={() => openChat(job)}
+                            className="flex-1"
+                          >
+                            <MessageSquare className="mr-2 h-4 w-4" />
+                            Chat
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            onClick={() => window.open(`tel:${job.customer?.phone_number}`)}
+                            className="flex-1"
+                          >
+                            <Phone className="mr-2 h-4 w-4" />
+                            Call
+                          </Button>
+                          <Button 
+                            onClick={() => openJobWorkflow(job)}
+                            className="flex-1 gradient-primary"
+                          >
+                            <Camera className="mr-2 h-4 w-4" />
+                            Complete
+                          </Button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </AnimatedCard>
+              )}
+            </motion.div>
+          )}
 
-        {activeNav === 'notifications' && (
-          <div className="space-y-6 animate-fade-in">
-            <h2 className="text-3xl font-bold">Notifications</h2>
-            {notifications.length === 0 ? (
-              <Card className="stat-card">
-                <CardContent className="py-12 text-center">
+          {activeNav === 'notifications' && (
+            <motion.div
+              key="notifications"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6"
+            >
+              <h2 className="text-3xl font-bold">Notifications</h2>
+              {notifications.length === 0 ? (
+                <AnimatedCard className="p-12 text-center">
                   <Bell className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">No notifications yet</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {notifications.map((notification) => (
-                  <Card key={notification.id} className={`stat-card ${!notification.is_read ? 'border-l-4 border-l-primary' : ''}`}>
-                    <CardContent className="py-4">
+                </AnimatedCard>
+              ) : (
+                <div className="space-y-3">
+                  {notifications.map((notification, index) => (
+                    <AnimatedCard
+                      key={notification.id}
+                      delay={index * 0.05}
+                      className={`p-4 ${!notification.is_read ? 'border-l-4 border-l-primary' : ''}`}
+                    >
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className="font-semibold">{notification.title}</h4>
@@ -677,19 +688,23 @@ const MechanicDashboard = () => {
                           {new Date(notification.created_at).toLocaleDateString()}
                         </span>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                    </AnimatedCard>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
 
-        {activeNav === 'profile' && (
-          <div className="space-y-6 animate-fade-in max-w-md">
-            <h2 className="text-3xl font-bold">Profile</h2>
-            <Card className="stat-card">
-              <CardContent className="pt-6 space-y-4">
+          {activeNav === 'profile' && (
+            <motion.div
+              key="profile"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6 max-w-md"
+            >
+              <h2 className="text-3xl font-bold">Profile</h2>
+              <AnimatedCard className="p-6 space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Full Name</Label>
                   <Input
@@ -720,66 +735,91 @@ const MechanicDashboard = () => {
                 <Button onClick={saveProfile} className="w-full gradient-primary">
                   Save Changes
                 </Button>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+              </AnimatedCard>
+            </motion.div>
+          )}
 
-        {activeNav === 'settings' && (
-          <div className="space-y-6 animate-fade-in max-w-md">
-            <h2 className="text-3xl font-bold">Settings</h2>
-            <Card className="stat-card">
-              <CardContent className="pt-6 space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Push Notifications</p>
-                    <p className="text-sm text-muted-foreground">Receive alerts for new requests</p>
+          {activeNav === 'settings' && (
+            <motion.div
+              key="settings"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-6 max-w-md"
+            >
+              <h2 className="text-3xl font-bold">Settings</h2>
+              <AnimatedCard className="p-6 space-y-6">
+                {[
+                  { key: 'push_notifications', label: 'Push Notifications', desc: 'Receive alerts for new requests' },
+                  { key: 'location_sharing', label: 'Location Sharing', desc: 'Share location with customers' },
+                  { key: 'dark_mode', label: 'Dark Mode', desc: 'Use dark theme' },
+                ].map((setting) => (
+                  <div key={setting.key} className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{setting.label}</p>
+                      <p className="text-sm text-muted-foreground">{setting.desc}</p>
+                    </div>
+                    <Switch 
+                      checked={settings[setting.key as keyof typeof settings]}
+                      onCheckedChange={(value) => updateSettings(setting.key, value)}
+                    />
                   </div>
-                  <Switch 
-                    checked={settings.push_notifications}
-                    onCheckedChange={(value) => updateSettings('push_notifications', value)}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Location Sharing</p>
-                    <p className="text-sm text-muted-foreground">Share location with customers</p>
-                  </div>
-                  <Switch 
-                    checked={settings.location_sharing}
-                    onCheckedChange={(value) => updateSettings('location_sharing', value)}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Dark Mode</p>
-                    <p className="text-sm text-muted-foreground">Use dark theme</p>
-                  </div>
-                  <Switch 
-                    checked={settings.dark_mode}
-                    onCheckedChange={(value) => updateSettings('dark_mode', value)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="stat-card">
-              <CardHeader>
-                <CardTitle>Connected Device</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button variant="outline" className="w-full">
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Connect Device
-                </Button>
-                <Button variant="outline" className="w-full">
-                  Privacy & Security
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+                ))}
+              </AnimatedCard>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
+
+      {/* Work Media Upload Dialog */}
+      <Dialog open={showMediaUpload} onOpenChange={setShowMediaUpload}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Upload Work Photos/Videos</DialogTitle>
+          </DialogHeader>
+          {selectedJob && (
+            <div className="space-y-4">
+              <WorkMediaUpload serviceRequestId={selectedJob.id} />
+              <div className="flex gap-4">
+                <Button variant="outline" onClick={() => setShowMediaUpload(false)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button onClick={proceedToInvoice} className="flex-1 gradient-accent">
+                  <FileText className="mr-2 h-4 w-4" />
+                  Generate Invoice
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Invoice Generation Dialog */}
+      <Dialog open={showInvoice} onOpenChange={setShowInvoice}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Generate Invoice</DialogTitle>
+          </DialogHeader>
+          {selectedJob && (
+            <InvoiceGenerator
+              serviceRequestId={selectedJob.id}
+              customerId={selectedJob.customer_id}
+              customerName={selectedJob.customer?.full_name || 'Customer'}
+              onInvoiceCreated={completeJobWithInvoice}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Chat Window */}
+      {chatJob && (
+        <ChatWindow
+          serviceRequestId={chatJob.id}
+          otherPartyName={chatJob.customer?.full_name || 'Customer'}
+          isOpen={showChat}
+          onClose={() => setShowChat(false)}
+        />
+      )}
     </div>
   );
 };
