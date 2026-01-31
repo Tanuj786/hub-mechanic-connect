@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +13,7 @@ import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { ChatWindow } from '@/components/chat/ChatWindow';
 import { ServiceRequestCard, JobStatus } from '@/components/jobs/ServiceRequestCard';
 import { JobCompletionModal } from '@/components/jobs/JobCompletionModal';
+import { IncomingRequestAlert } from '@/components/service-request/IncomingRequestAlert';
 import { 
   LayoutDashboard, 
   Bell, 
@@ -28,7 +29,9 @@ import {
   Loader2,
   TrendingUp,
   Target,
-  Trophy
+  Trophy,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -93,6 +96,10 @@ const MechanicDashboard = () => {
   const [showChat, setShowChat] = useState(false);
   const [chatJob, setChatJob] = useState<ServiceRequest | null>(null);
   
+  // Incoming request alert
+  const [incomingRequest, setIncomingRequest] = useState<ServiceRequest | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  
   // Loading states
   const [acceptingJobId, setAcceptingJobId] = useState<string | null>(null);
   const [startingJobId, setStartingJobId] = useState<string | null>(null);
@@ -153,13 +160,29 @@ const MechanicDashboard = () => {
   const setupRealtimeSubscription = () => {
     const channel = supabase
       .channel('mechanic-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, (payload) => {
+        // Check for new pending requests
+        if (payload.eventType === 'INSERT' && payload.new.status === 'pending' && shop?.is_online) {
+          // Show incoming request alert
+          setIncomingRequest(payload.new as ServiceRequest);
+        }
+        fetchData();
+      })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user?.id}` }, () => fetchData())
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   };
 
+  const handleAcceptIncoming = async (requestId: string) => {
+    await acceptJob(requestId);
+    setIncomingRequest(null);
+  };
+
+  const handleRejectIncoming = async (requestId: string) => {
+    setIncomingRequest(null);
+    // Optionally notify that this mechanic declined
+  };
   const toggleOnlineStatus = async () => {
     if (!shop) return;
     const newStatus = !shop.is_online;
@@ -346,6 +369,16 @@ const MechanicDashboard = () => {
               <div className="flex items-center justify-between">
                 <motion.h2 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="text-3xl font-bold">Dashboard</motion.h2>
                 <div className="flex items-center gap-4">
+                  {/* Sound Toggle */}
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setSoundEnabled(!soundEnabled)}
+                    className="p-2 rounded-full bg-secondary hover:bg-secondary/80"
+                    title={soundEnabled ? 'Sound On' : 'Sound Off'}
+                  >
+                    {soundEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5 text-muted-foreground" />}
+                  </motion.button>
                   <NotificationBell />
                   <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-3 bg-card rounded-full px-4 py-2 border border-border shadow-sm">
                     <span className={`w-3 h-3 rounded-full ${shop?.is_online ? 'bg-success animate-pulse' : 'bg-muted'}`} />
@@ -602,6 +635,24 @@ const MechanicDashboard = () => {
           onClose={() => setShowChat(false)}
         />
       )}
+
+      {/* Incoming Request Alert */}
+      <IncomingRequestAlert
+        request={incomingRequest ? {
+          id: incomingRequest.id,
+          serviceName: incomingRequest.service_type?.name || 'Service Request',
+          customerName: incomingRequest.customer?.full_name || 'Customer',
+          customerPhone: incomingRequest.customer?.phone_number,
+          address: incomingRequest.customer_address,
+          vehicleType: incomingRequest.vehicle_type,
+          description: incomingRequest.description || undefined,
+          createdAt: incomingRequest.created_at,
+        } : null}
+        onAccept={handleAcceptIncoming}
+        onReject={handleRejectIncoming}
+        isLoading={acceptingJobId === incomingRequest?.id}
+        timeoutSeconds={30}
+      />
     </div>
   );
 };

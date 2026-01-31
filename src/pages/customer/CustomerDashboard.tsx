@@ -13,6 +13,7 @@ import { RazorpayPayment } from '@/components/payment/RazorpayPayment';
 import { JobStatusTimeline, TimelineStatus } from '@/components/jobs/JobStatusTimeline';
 import { InvoiceCard } from '@/components/jobs/InvoiceCard';
 import { CustomerMediaUpload } from '@/components/media/CustomerMediaUpload';
+import { ReviewModal } from '@/components/reviews/ReviewModal';
 import { 
   LayoutDashboard, 
   Search, 
@@ -75,6 +76,7 @@ interface Invoice {
   service_request_id: string;
   created_at: string;
   notes: string | null;
+  mechanic_id: string;
 }
 
 const CustomerDashboard = () => {
@@ -98,6 +100,9 @@ const CustomerDashboard = () => {
   const [showMediaUpload, setShowMediaUpload] = useState(false);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+  const [showReview, setShowReview] = useState(false);
+  const [reviewService, setReviewService] = useState<ServiceRequest | null>(null);
+  const [paidInvoice, setPaidInvoice] = useState<Invoice | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -159,7 +164,27 @@ const CustomerDashboard = () => {
 
   const openPayment = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
+    setPaidInvoice(invoice);
     setShowPayment(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    setShowPayment(false);
+    setSelectedInvoice(null);
+    
+    // Find the service request for this invoice to prompt review
+    if (paidInvoice) {
+      const service = serviceHistory.find(s => 
+        s.status === 'completed' && s.mechanic_id
+      );
+      if (service) {
+        setReviewService(service);
+        setShowReview(true);
+      }
+    }
+    
+    fetchData();
+    toast({ title: 'Payment Successful!', description: 'Your payment has been processed successfully.' });
   };
 
   const openChat = (service: ServiceRequest) => {
@@ -526,12 +551,7 @@ const CustomerDashboard = () => {
           {selectedInvoice && (
             <RazorpayPayment
               invoiceId={selectedInvoice.id}
-              onPaymentSuccess={() => {
-                setShowPayment(false);
-                setSelectedInvoice(null);
-                fetchData();
-                toast({ title: 'Payment Successful!', description: 'Your payment has been processed successfully.' });
-              }}
+              onPaymentSuccess={handlePaymentSuccess}
             />
           )}
         </DialogContent>
@@ -554,6 +574,25 @@ const CustomerDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Review Modal */}
+      {reviewService && reviewService.mechanic_id && (
+        <ReviewModal
+          isOpen={showReview}
+          onClose={() => {
+            setShowReview(false);
+            setReviewService(null);
+          }}
+          serviceRequestId={reviewService.id}
+          mechanicId={reviewService.mechanic_id}
+          mechanicName={reviewService.mechanic?.full_name || 'Mechanic'}
+          onReviewSubmitted={() => {
+            setShowReview(false);
+            setReviewService(null);
+            fetchData();
+          }}
+        />
+      )}
 
       {/* Chat Window */}
       {chatService && (
