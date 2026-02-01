@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Car, Wrench, MapPin, Clock, Star, Shield, Zap, Phone, CheckCircle } from 'lucide-react';
+import madat24Logo from '@/assets/madat24-mascot-logo.png';
 
 const Index = () => {
   return (
@@ -36,8 +37,7 @@ const Index = () => {
             transition={{ duration: 0.5 }}
             className="flex items-center gap-2"
           >
-            <Wrench className="h-8 w-8 text-accent" />
-            <span className="text-2xl font-bold">MechanicQ</span>
+            <img src={madat24Logo} alt="Madat24" className="h-12 w-auto" />
           </motion.div>
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
@@ -251,7 +251,7 @@ const Index = () => {
             className="text-center mb-16"
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Why Choose <span className="text-primary">MechanicQ</span>?
+              Why Choose <span className="text-primary">Madat24</span>?
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               Fast, reliable, and transparent roadside assistance at your fingertips
@@ -380,7 +380,7 @@ const Index = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">24/7 Support</p>
-                <p className="font-semibold text-lg">1800-MECHANIC</p>
+                <p className="font-semibold text-lg">1800-MADAT24</p>
               </div>
             </motion.div>
           </div>
@@ -397,12 +397,16 @@ const Index = () => {
               viewport={{ once: true }}
               className="flex items-center gap-2 mb-4 md:mb-0"
             >
-              <Wrench className="h-6 w-6 text-accent" />
-              <span className="text-xl font-bold">MechanicQ</span>
+              <img src={madat24Logo} alt="Madat24" className="h-10 w-auto" />
             </motion.div>
-            <p className="text-background/60">
-              © 2024 MechanicQ. All rights reserved.
-            </p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              className="text-sm text-background/60"
+            >
+              © 2024 Madat24. All rights reserved.
+            </motion.p>
           </div>
         </div>
       </footer>
