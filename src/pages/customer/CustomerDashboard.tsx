@@ -168,21 +168,38 @@ const CustomerDashboard = () => {
     setShowPayment(true);
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     setShowPayment(false);
-    setSelectedInvoice(null);
     
-    // Find the service request for this invoice to prompt review
+    // Find the service request for this specific invoice to prompt review
     if (paidInvoice) {
-      const service = serviceHistory.find(s => 
-        s.status === 'completed' && s.mechanic_id
-      );
-      if (service) {
-        setReviewService(service);
-        setShowReview(true);
+      // Fetch the service request linked to this invoice
+      const { data: invoiceData } = await supabase
+        .from('invoices')
+        .select('service_request_id, mechanic_id')
+        .eq('id', paidInvoice.id)
+        .single();
+      
+      if (invoiceData) {
+        const service = serviceHistory.find(s => s.id === invoiceData.service_request_id);
+        if (service && service.mechanic_id) {
+          // Check if review already exists for this service request
+          const { data: existingReview } = await supabase
+            .from('ratings')
+            .select('id')
+            .eq('service_request_id', service.id)
+            .maybeSingle();
+          
+          if (!existingReview) {
+            setReviewService(service);
+            setShowReview(true);
+          }
+        }
       }
     }
     
+    setSelectedInvoice(null);
+    setPaidInvoice(null);
     fetchData();
     toast({ title: 'Payment Successful!', description: 'Your payment has been processed successfully.' });
   };
