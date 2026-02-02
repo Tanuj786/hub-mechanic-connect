@@ -14,6 +14,7 @@ import { ChatWindow } from '@/components/chat/ChatWindow';
 import { ServiceRequestCard, JobStatus } from '@/components/jobs/ServiceRequestCard';
 import { JobCompletionModal } from '@/components/jobs/JobCompletionModal';
 import { IncomingRequestAlert } from '@/components/service-request/IncomingRequestAlert';
+import { MechanicReviewsList } from '@/components/reviews/MechanicReviewsList';
 import { 
   LayoutDashboard, 
   Bell, 
@@ -31,7 +32,8 @@ import {
   Target,
   Trophy,
   Volume2,
-  VolumeX
+  VolumeX,
+  MessageSquare
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -334,6 +336,7 @@ const MechanicDashboard = () => {
         <nav className="flex-1 p-4 space-y-2">
           {[
             { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+            { id: 'reviews', icon: MessageSquare, label: 'Reviews' },
             { id: 'notifications', icon: Bell, label: 'Notifications', badge: notifications.filter(n => !n.is_read).length },
             { id: 'profile', icon: User, label: 'Profile' },
             { id: 'settings', icon: Settings, label: 'Settings' },
@@ -541,6 +544,16 @@ const MechanicDashboard = () => {
                   )}
                 </AnimatedCard>
               )}
+            </motion.div>
+          )}
+
+          {activeNav === 'reviews' && (
+            <motion.div key="reviews" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
+              <h2 className="text-3xl font-bold flex items-center gap-3">
+                <Star className="h-8 w-8 text-warning" />
+                Customer Reviews
+              </h2>
+              <MechanicReviewsList />
             </motion.div>
           )}
 
