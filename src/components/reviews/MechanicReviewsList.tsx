@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { AnimatedCard, StaggerContainer, StaggerItem } from '@/components/ui/animated-card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Star, MessageSquare, ThumbsUp, Calendar } from 'lucide-react';
+import { Star, MessageSquare, ThumbsUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MechanicReviewCard } from './MechanicReviewCard';
+import { MechanicReviewResponse } from './MechanicReviewResponse';
 
 interface Review {
   id: string;
   rating: number;
   review: string | null;
   created_at: string;
+  mechanic_response: string | null;
+  mechanic_response_at: string | null;
   customer: {
     full_name: string;
     avatar_url: string | null;
@@ -26,6 +28,8 @@ export const MechanicReviewsList = () => {
   const { user } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
+  const [showResponseModal, setShowResponseModal] = useState(false);
   const [stats, setStats] = useState({
     averageRating: 0,
     totalReviews: 0,
@@ -49,6 +53,8 @@ export const MechanicReviewsList = () => {
           rating,
           review,
           created_at,
+          mechanic_response,
+          mechanic_response_at,
           customer:profiles!customer_id(full_name, avatar_url),
           service_request:service_requests!service_request_id(
             service_type:service_types(name)
@@ -59,12 +65,13 @@ export const MechanicReviewsList = () => {
 
       if (error) throw error;
 
-      // Transform data
       const transformedReviews = (data || []).map((r: any) => ({
         id: r.id,
         rating: r.rating,
         review: r.review,
         created_at: r.created_at,
+        mechanic_response: r.mechanic_response,
+        mechanic_response_at: r.mechanic_response_at,
         customer: r.customer,
         service_type: r.service_request?.service_type || { name: 'Service' },
       }));
@@ -93,17 +100,15 @@ export const MechanicReviewsList = () => {
     }
   };
 
-  const getRatingLabel = (rating: number) => {
-    const labels = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
-    return labels[rating - 1] || '';
+  const handleRespond = (review: Review) => {
+    setSelectedReview(review);
+    setShowResponseModal(true);
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+  const handleResponseSubmitted = () => {
+    fetchReviews();
+    setShowResponseModal(false);
+    setSelectedReview(null);
   };
 
   if (loading) {
@@ -166,7 +171,7 @@ export const MechanicReviewsList = () => {
                         initial={{ width: 0 }}
                         animate={{ width: `${percentage}%` }}
                         transition={{ delay: 0.3 + rating * 0.1, duration: 0.5 }}
-                        className="h-full gradient-warning rounded-full"
+                        className="h-full bg-warning rounded-full"
                       />
                     </div>
                     <span className="w-8 text-right text-muted-foreground">{count}</span>
@@ -192,9 +197,9 @@ export const MechanicReviewsList = () => {
             </div>
             <div className="text-center p-4 bg-primary/10 rounded-xl">
               <p className="text-2xl font-bold text-primary">
-                {reviews.filter((r) => r.review && r.review.length > 0).length}
+                {reviews.filter((r) => r.mechanic_response).length}
               </p>
-              <p className="text-sm text-muted-foreground">With Comments</p>
+              <p className="text-sm text-muted-foreground">Responded</p>
             </div>
           </div>
         </AnimatedCard>
@@ -219,77 +224,32 @@ export const MechanicReviewsList = () => {
         <StaggerContainer className="space-y-4">
           {reviews.map((review, index) => (
             <StaggerItem key={review.id}>
-              <AnimatedCard delay={0.2 + index * 0.05} className="p-5">
-                <div className="flex gap-4">
-                  {/* Avatar */}
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={review.customer.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                      {review.customer.full_name?.charAt(0)?.toUpperCase() || 'C'}
-                    </AvatarFallback>
-                  </Avatar>
-
-                  {/* Content */}
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-semibold">{review.customer.full_name}</h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          <div className="flex gap-0.5">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={cn(
-                                  'h-4 w-4',
-                                  star <= review.rating
-                                    ? 'text-warning fill-warning'
-                                    : 'text-muted-foreground/30'
-                                )}
-                              />
-                            ))}
-                          </div>
-                          <Badge
-                            variant="secondary"
-                            className={cn(
-                              'text-xs',
-                              review.rating >= 4
-                                ? 'bg-success/10 text-success'
-                                : review.rating >= 3
-                                ? 'bg-warning/10 text-warning'
-                                : 'bg-destructive/10 text-destructive'
-                            )}
-                          >
-                            {getRatingLabel(review.rating)}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant="outline" className="mb-1">
-                          {review.service_type?.name || 'Service'}
-                        </Badge>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {formatDate(review.created_at)}
-                        </p>
-                      </div>
-                    </div>
-
-                    {review.review && (
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.3 }}
-                        className="mt-3 text-muted-foreground bg-secondary/50 rounded-lg p-3"
-                      >
-                        "{review.review}"
-                      </motion.p>
-                    )}
-                  </div>
-                </div>
+              <AnimatedCard delay={0.2 + index * 0.05} className="p-0 overflow-hidden">
+                <MechanicReviewCard
+                  review={review}
+                  showResponseButton={true}
+                  onRespond={handleRespond}
+                />
               </AnimatedCard>
             </StaggerItem>
           ))}
         </StaggerContainer>
+      )}
+
+      {/* Response Modal */}
+      {selectedReview && (
+        <MechanicReviewResponse
+          isOpen={showResponseModal}
+          onClose={() => {
+            setShowResponseModal(false);
+            setSelectedReview(null);
+          }}
+          reviewId={selectedReview.id}
+          customerName={selectedReview.customer.full_name}
+          reviewText={selectedReview.review || ''}
+          existingResponse={selectedReview.mechanic_response}
+          onResponseSubmitted={handleResponseSubmitted}
+        />
       )}
     </div>
   );

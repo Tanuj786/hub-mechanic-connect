@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { 
   CreditCard, 
   FileText, 
@@ -13,7 +15,10 @@ import {
   Loader2,
   IndianRupee,
   ShieldCheck,
-  Download
+  Smartphone,
+  Banknote,
+  Building2,
+  Wallet
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -51,6 +56,39 @@ declare global {
   }
 }
 
+type PaymentMethod = 'upi' | 'card' | 'netbanking' | 'wallet';
+
+const paymentMethods = [
+  {
+    id: 'upi' as PaymentMethod,
+    label: 'UPI',
+    description: 'Pay using Google Pay, PhonePe, Paytm',
+    icon: Smartphone,
+    recommended: true,
+  },
+  {
+    id: 'card' as PaymentMethod,
+    label: 'Card',
+    description: 'Debit or Credit Card',
+    icon: CreditCard,
+    recommended: false,
+  },
+  {
+    id: 'netbanking' as PaymentMethod,
+    label: 'Net Banking',
+    description: 'All major banks supported',
+    icon: Building2,
+    recommended: false,
+  },
+  {
+    id: 'wallet' as PaymentMethod,
+    label: 'Wallets',
+    description: 'Amazon Pay, Mobikwik, etc.',
+    icon: Wallet,
+    recommended: false,
+  },
+];
+
 export const RazorpayPayment = ({ invoiceId, onPaymentSuccess }: RazorpayPaymentProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -58,6 +96,7 @@ export const RazorpayPayment = ({ invoiceId, onPaymentSuccess }: RazorpayPayment
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('upi');
 
   useEffect(() => {
     fetchInvoice();
@@ -96,17 +135,30 @@ export const RazorpayPayment = ({ invoiceId, onPaymentSuccess }: RazorpayPayment
     }
   };
 
+  const getMethodConfig = (method: PaymentMethod) => {
+    switch (method) {
+      case 'upi':
+        return { method: { upi: true } };
+      case 'card':
+        return { method: { card: true } };
+      case 'netbanking':
+        return { method: { netbanking: true } };
+      case 'wallet':
+        return { method: { wallet: true } };
+      default:
+        return {};
+    }
+  };
+
   const initiatePayment = async () => {
     if (!invoice || !user) return;
 
     setProcessing(true);
 
     try {
-      // Get auth token
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
-      // Create Razorpay order via edge function
       const response = await supabase.functions.invoke('create-razorpay-order', {
         body: { invoice_id: invoiceId },
       });
@@ -115,17 +167,17 @@ export const RazorpayPayment = ({ invoiceId, onPaymentSuccess }: RazorpayPayment
 
       const { order_id, amount, currency, key_id } = response.data;
 
-      // Open Razorpay checkout
+      const methodConfig = getMethodConfig(selectedMethod);
+
       const options = {
         key: key_id,
         amount: amount,
         currency: currency,
-        name: 'MechanicQ',
+        name: 'Madat24',
         description: `Payment for Invoice ${invoice.invoice_number}`,
         order_id: order_id,
         handler: async (response: any) => {
           try {
-            // Verify payment via edge function
             const verifyResponse = await supabase.functions.invoke('verify-razorpay-payment', {
               body: {
                 razorpay_order_id: response.razorpay_order_id,
@@ -157,9 +209,33 @@ export const RazorpayPayment = ({ invoiceId, onPaymentSuccess }: RazorpayPayment
           email: user.email || '',
           contact: user.user_metadata?.phone_number || '',
         },
+        config: {
+          display: {
+            blocks: {
+              utib: {
+                name: "Pay via " + selectedMethod.toUpperCase(),
+                instruments: [
+                  {
+                    method: selectedMethod,
+                  },
+                ],
+              },
+            },
+            sequence: ["block.utib"],
+            preferences: {
+              show_default_blocks: selectedMethod === 'upi' ? false : true,
+            },
+          },
+        },
         theme: {
           color: '#2563eb',
+          backdrop_color: 'rgba(0,0,0,0.8)',
         },
+        modal: {
+          confirm_close: true,
+          escape: false,
+        },
+        ...methodConfig,
       };
 
       const razorpay = new window.Razorpay(options);
@@ -202,7 +278,7 @@ export const RazorpayPayment = ({ invoiceId, onPaymentSuccess }: RazorpayPayment
       animate={{ opacity: 1, y: 0 }}
     >
       <Card className="overflow-hidden">
-        <CardHeader className="gradient-primary text-primary-foreground">
+        <CardHeader className="bg-primary text-primary-foreground">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
@@ -278,10 +354,65 @@ export const RazorpayPayment = ({ invoiceId, onPaymentSuccess }: RazorpayPayment
             </div>
           )}
 
+          {/* Payment Method Selection */}
+          {invoice.status !== 'paid' && (
+            <div className="space-y-4">
+              <h4 className="font-semibold flex items-center gap-2">
+                <Banknote className="h-5 w-5 text-primary" />
+                Select Payment Method
+              </h4>
+              <RadioGroup
+                value={selectedMethod}
+                onValueChange={(value) => setSelectedMethod(value as PaymentMethod)}
+                className="grid grid-cols-2 gap-3"
+              >
+                {paymentMethods.map((method) => (
+                  <motion.div
+                    key={method.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Label
+                      htmlFor={method.id}
+                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                        selectedMethod === method.id
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <RadioGroupItem value={method.id} id={method.id} className="sr-only" />
+                      <div className={`p-2 rounded-lg ${
+                        selectedMethod === method.id
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-secondary'
+                      }`}>
+                        <method.icon className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{method.label}</span>
+                          {method.recommended && (
+                            <Badge variant="secondary" className="text-xs bg-success/10 text-success">
+                              Recommended
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{method.description}</p>
+                      </div>
+                      {selectedMethod === method.id && (
+                        <Check className="h-5 w-5 text-primary" />
+                      )}
+                    </Label>
+                  </motion.div>
+                ))}
+              </RadioGroup>
+            </div>
+          )}
+
           {/* Security Badge */}
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <ShieldCheck className="h-4 w-4 text-success" />
-            Secured by Razorpay
+            Secured by Razorpay | 256-bit SSL Encryption
           </div>
         </CardContent>
         
@@ -290,14 +421,16 @@ export const RazorpayPayment = ({ invoiceId, onPaymentSuccess }: RazorpayPayment
             <Button
               onClick={initiatePayment}
               disabled={processing}
-              className="w-full gradient-accent text-accent-foreground text-lg py-6"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6"
             >
               {processing ? (
                 <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              ) : selectedMethod === 'upi' ? (
+                <Smartphone className="h-5 w-5 mr-2" />
               ) : (
                 <CreditCard className="h-5 w-5 mr-2" />
               )}
-              Pay ₹{invoice.total_amount.toFixed(2)}
+              Pay ₹{invoice.total_amount.toFixed(2)} via {selectedMethod.toUpperCase()}
             </Button>
           </CardFooter>
         )}

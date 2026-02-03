@@ -14,6 +14,7 @@ import { JobStatusTimeline, TimelineStatus } from '@/components/jobs/JobStatusTi
 import { InvoiceCard } from '@/components/jobs/InvoiceCard';
 import { CustomerMediaUpload } from '@/components/media/CustomerMediaUpload';
 import { ReviewModal } from '@/components/reviews/ReviewModal';
+import { CustomerHistory } from '@/components/customer/CustomerHistory';
 import { 
   LayoutDashboard, 
   Search, 
@@ -36,7 +37,8 @@ import {
   Image as ImageIcon,
   Send,
   Loader2,
-  Wrench
+  Wrench,
+  History
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -263,6 +265,7 @@ const CustomerDashboard = () => {
           {[
             { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
             { id: 'find', icon: Search, label: 'Find Mechanic', action: () => navigate('/customer/find-mechanic') },
+            { id: 'history', icon: History, label: 'History' },
             { id: 'invoices', icon: CreditCard, label: 'Invoices', badge: pendingInvoices.length },
             { id: 'notifications', icon: Bell, label: 'Notifications', badge: notifications.filter(n => !n.is_read).length },
           ].map((item) => (
@@ -527,6 +530,16 @@ const CustomerDashboard = () => {
                   <p className="text-muted-foreground">You have no pending invoices.</p>
                 </AnimatedCard>
               )}
+            </motion.div>
+          )}
+
+          {activeNav === 'history' && (
+            <motion.div key="history" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
+              <h2 className="text-3xl font-bold flex items-center gap-2">
+                <History className="h-8 w-8 text-primary" />
+                Service History
+              </h2>
+              <CustomerHistory />
             </motion.div>
           )}
 
