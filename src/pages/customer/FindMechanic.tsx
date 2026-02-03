@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { AnimatedCard } from '@/components/ui/animated-card';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { ServiceRequestFlow } from '@/components/service-request/ServiceRequestFlow';
+import { MechanicReviewsDisplay } from '@/components/reviews/MechanicReviewsDisplay';
 import { 
   ArrowLeft,
   MapPin, 
@@ -19,12 +20,16 @@ import {
   Loader2,
   Wrench,
   Users,
-  CheckCircle
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  MessageSquare
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Mechanic {
   id: string;
+  mechanic_id: string;
   shop_name: string;
   shop_description: string;
   shop_address: string;
@@ -54,6 +59,7 @@ const FindMechanic = () => {
   const [showRequestFlow, setShowRequestFlow] = useState(true);
   const [requestCreated, setRequestCreated] = useState(false);
   const [onlineMechanicsCount, setOnlineMechanicsCount] = useState(0);
+  const [expandedMechanic, setExpandedMechanic] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMechanics();
@@ -102,6 +108,10 @@ const FindMechanic = () => {
       title: 'Request Sent!',
       description: 'We are finding the best mechanic for you.',
     });
+  };
+
+  const toggleMechanicExpand = (mechanicId: string) => {
+    setExpandedMechanic(expandedMechanic === mechanicId ? null : mechanicId);
   };
 
   if (loading) {
@@ -175,7 +185,7 @@ const FindMechanic = () => {
           <ServiceRequestFlow onRequestCreated={handleRequestCreated} />
         </AnimatedCard>
 
-        {/* Available Mechanics Preview */}
+        {/* Available Mechanics Preview with Reviews */}
         {!requestCreated && mechanics.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -188,21 +198,21 @@ const FindMechanic = () => {
               Nearby Mechanics
             </h2>
             <div className="grid gap-4">
-              {mechanics.slice(0, 3).map((mechanic, index) => (
+              {mechanics.slice(0, 5).map((mechanic, index) => (
                 <motion.div
                   key={mechanic.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 + index * 0.1 }}
                 >
-                  <Card className="hover:shadow-lg transition-shadow">
+                  <Card className="hover:shadow-lg transition-shadow overflow-hidden">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="font-semibold">{mechanic.shop_name}</h3>
-                            <Badge className="gradient-success">
-                              <span className="w-2 h-2 rounded-full bg-success-foreground mr-1 animate-pulse" />
+                            <Badge className="bg-success/10 text-success border-success/30">
+                              <span className="w-2 h-2 rounded-full bg-success mr-1 animate-pulse" />
                               Online
                             </Badge>
                           </div>
@@ -249,15 +259,54 @@ const FindMechanic = () => {
                           <p className="text-xs text-muted-foreground">per hour</p>
                         </div>
                       </div>
+
+                      {/* View Reviews Button */}
+                      {mechanic.total_reviews > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleMechanicExpand(mechanic.id)}
+                          className="w-full mt-3 text-xs"
+                        >
+                          <MessageSquare className="h-3 w-3 mr-1" />
+                          {expandedMechanic === mechanic.id ? 'Hide' : 'View'} Customer Reviews
+                          {expandedMechanic === mechanic.id ? (
+                            <ChevronUp className="h-3 w-3 ml-1" />
+                          ) : (
+                            <ChevronDown className="h-3 w-3 ml-1" />
+                          )}
+                        </Button>
+                      )}
+
+                      {/* Expanded Reviews Section */}
+                      <AnimatePresence>
+                        {expandedMechanic === mechanic.id && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="mt-4 pt-4 border-t border-border">
+                              <MechanicReviewsDisplay
+                                mechanicId={mechanic.mechanic_id}
+                                limit={3}
+                                showTitle={false}
+                              />
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </CardContent>
                   </Card>
                 </motion.div>
               ))}
             </div>
 
-            {mechanics.length > 3 && (
+            {mechanics.length > 5 && (
               <p className="text-center text-sm text-muted-foreground">
-                +{mechanics.length - 3} more mechanics available
+                +{mechanics.length - 5} more mechanics available
               </p>
             )}
           </motion.div>

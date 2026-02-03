@@ -484,6 +484,8 @@ export type Database = {
           customer_id: string
           id: string
           mechanic_id: string
+          mechanic_response: string | null
+          mechanic_response_at: string | null
           rating: number
           review: string | null
           service_request_id: string
@@ -493,6 +495,8 @@ export type Database = {
           customer_id: string
           id?: string
           mechanic_id: string
+          mechanic_response?: string | null
+          mechanic_response_at?: string | null
           rating: number
           review?: string | null
           service_request_id: string
@@ -502,6 +506,8 @@ export type Database = {
           customer_id?: string
           id?: string
           mechanic_id?: string
+          mechanic_response?: string | null
+          mechanic_response_at?: string | null
           rating?: number
           review?: string | null
           service_request_id?: string
