@@ -276,8 +276,9 @@ export const RazorpayPayment = ({ invoiceId, onPaymentSuccess }: RazorpayPayment
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      className="w-full"
     >
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden border-0 shadow-none">
         <CardHeader className="bg-primary text-primary-foreground">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
@@ -296,12 +297,12 @@ export const RazorpayPayment = ({ invoiceId, onPaymentSuccess }: RazorpayPayment
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="p-6 space-y-6">
+        <CardContent className="p-4 space-y-4">
           {/* Mechanic Info */}
-          <div className="bg-secondary/50 rounded-lg p-4">
-            <p className="text-sm text-muted-foreground">From:</p>
-            <p className="font-semibold">{invoice.mechanic.full_name}</p>
-            <p className="text-xs text-muted-foreground mt-1">
+          <div className="bg-secondary/50 rounded-lg p-3">
+            <p className="text-xs text-muted-foreground">From:</p>
+            <p className="font-semibold text-sm">{invoice.mechanic.full_name}</p>
+            <p className="text-xs text-muted-foreground">
               {new Date(invoice.created_at).toLocaleDateString('en-IN', {
                 year: 'numeric',
                 month: 'long',
@@ -311,17 +312,17 @@ export const RazorpayPayment = ({ invoiceId, onPaymentSuccess }: RazorpayPayment
           </div>
 
           {/* Items */}
-          <div className="space-y-3">
-            <h4 className="font-semibold">Services</h4>
+          <div className="space-y-2">
+            <h4 className="font-semibold text-sm">Services</h4>
             {items.map((item) => (
-              <div key={item.id} className="flex justify-between items-center py-2 border-b border-border/50">
+              <div key={item.id} className="flex justify-between items-center py-1.5 border-b border-border/50">
                 <div>
-                  <p className="font-medium">{item.description}</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="font-medium text-sm">{item.description}</p>
+                  <p className="text-xs text-muted-foreground">
                     {item.quantity} × ₹{item.unit_price.toFixed(2)}
                   </p>
                 </div>
-                <p className="font-medium">₹{item.total_price.toFixed(2)}</p>
+                <p className="font-medium text-sm">₹{item.total_price.toFixed(2)}</p>
               </div>
             ))}
           </div>
@@ -329,7 +330,7 @@ export const RazorpayPayment = ({ invoiceId, onPaymentSuccess }: RazorpayPayment
           <Separator />
 
           {/* Totals */}
-          <div className="space-y-2">
+          <div className="space-y-1">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Subtotal</span>
               <span>₹{invoice.subtotal.toFixed(2)}</span>
@@ -338,25 +339,25 @@ export const RazorpayPayment = ({ invoiceId, onPaymentSuccess }: RazorpayPayment
               <span className="text-muted-foreground">GST ({invoice.tax_rate}%)</span>
               <span>₹{invoice.tax_amount.toFixed(2)}</span>
             </div>
-            <Separator />
-            <div className="flex justify-between text-xl font-bold">
+            <Separator className="my-2" />
+            <div className="flex justify-between text-lg font-bold">
               <span>Total</span>
               <span className="text-primary flex items-center">
-                <IndianRupee className="h-5 w-5" />
+                <IndianRupee className="h-4 w-4" />
                 {invoice.total_amount.toFixed(2)}
               </span>
             </div>
           </div>
 
           {invoice.notes && (
-            <div className="bg-secondary/50 rounded-lg p-3">
-              <p className="text-sm text-muted-foreground">{invoice.notes}</p>
+            <div className="bg-secondary/50 rounded-lg p-2">
+              <p className="text-xs text-muted-foreground">{invoice.notes}</p>
             </div>
           )}
 
           {/* Payment Method Selection */}
           {invoice.status !== 'paid' && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               <h4 className="font-semibold flex items-center gap-2">
                 <Banknote className="h-5 w-5 text-primary" />
                 Select Payment Method
@@ -364,60 +365,55 @@ export const RazorpayPayment = ({ invoiceId, onPaymentSuccess }: RazorpayPayment
               <RadioGroup
                 value={selectedMethod}
                 onValueChange={(value) => setSelectedMethod(value as PaymentMethod)}
-                className="grid grid-cols-2 gap-3"
+                className="grid grid-cols-2 gap-2"
               >
                 {paymentMethods.map((method) => (
-                  <motion.div
+                  <Label
                     key={method.id}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    htmlFor={method.id}
+                    className={`flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedMethod === method.id
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
                   >
-                    <Label
-                      htmlFor={method.id}
-                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                        selectedMethod === method.id
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <RadioGroupItem value={method.id} id={method.id} className="sr-only" />
-                      <div className={`p-2 rounded-lg ${
-                        selectedMethod === method.id
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-secondary'
-                      }`}>
-                        <method.icon className="h-5 w-5" />
+                    <RadioGroupItem value={method.id} id={method.id} className="sr-only" />
+                    <div className={`p-1.5 rounded-lg ${
+                      selectedMethod === method.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-secondary'
+                    }`}>
+                      <method.icon className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium text-sm">{method.label}</span>
+                        {method.recommended && (
+                          <Badge variant="secondary" className="text-[10px] px-1 py-0 bg-success/10 text-success">
+                            Best
+                          </Badge>
+                        )}
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{method.label}</span>
-                          {method.recommended && (
-                            <Badge variant="secondary" className="text-xs bg-success/10 text-success">
-                              Recommended
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">{method.description}</p>
-                      </div>
-                      {selectedMethod === method.id && (
-                        <Check className="h-5 w-5 text-primary" />
-                      )}
-                    </Label>
-                  </motion.div>
+                      <p className="text-[10px] text-muted-foreground truncate">{method.description}</p>
+                    </div>
+                    {selectedMethod === method.id && (
+                      <Check className="h-4 w-4 text-primary shrink-0" />
+                    )}
+                  </Label>
                 ))}
               </RadioGroup>
             </div>
           )}
 
           {/* Security Badge */}
-          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <ShieldCheck className="h-4 w-4 text-success" />
-            Secured by Razorpay | 256-bit SSL Encryption
+          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-2">
+            <ShieldCheck className="h-3.5 w-3.5 text-success" />
+            Secured by Razorpay | 256-bit SSL
           </div>
         </CardContent>
         
         {invoice.status !== 'paid' && (
-          <CardFooter className="bg-secondary/30 p-4">
+          <CardFooter className="bg-secondary/30 p-4 sticky bottom-0">
             <Button
               onClick={initiatePayment}
               disabled={processing}
