@@ -573,11 +573,7 @@ const CustomerDashboard = () => {
 
       {/* Payment Dialog */}
       <Dialog open={showPayment} onOpenChange={setShowPayment}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Complete Payment</DialogTitle>
-            <DialogDescription>Secure payment powered by Razorpay</DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0">
           {selectedInvoice && (
             <RazorpayPayment
               invoiceId={selectedInvoice.id}
