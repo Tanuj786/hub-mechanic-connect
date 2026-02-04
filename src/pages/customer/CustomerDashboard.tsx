@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { AnimatedCard, StaggerContainer, StaggerItem } from '@/components/ui/animated-card';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { ChatWindow } from '@/components/chat/ChatWindow';
+import { AutoExpertChat, AutoExpertButton } from '@/components/chat/AutoExpertChat';
 import { RazorpayPayment } from '@/components/payment/RazorpayPayment';
 import { JobStatusTimeline, TimelineStatus } from '@/components/jobs/JobStatusTimeline';
 import { InvoiceCard } from '@/components/jobs/InvoiceCard';
@@ -38,7 +39,8 @@ import {
   Send,
   Loader2,
   Wrench,
-  History
+  History,
+  Bot
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -105,6 +107,7 @@ const CustomerDashboard = () => {
   const [showReview, setShowReview] = useState(false);
   const [reviewService, setReviewService] = useState<ServiceRequest | null>(null);
   const [paidInvoice, setPaidInvoice] = useState<Invoice | null>(null);
+  const [showAutoExpert, setShowAutoExpert] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -629,6 +632,10 @@ const CustomerDashboard = () => {
           onClose={() => setShowChat(false)}
         />
       )}
+
+      {/* AI Auto Expert Chatbot */}
+      <AutoExpertChat isOpen={showAutoExpert} onClose={() => setShowAutoExpert(false)} />
+      {!showAutoExpert && <AutoExpertButton onClick={() => setShowAutoExpert(true)} />}
     </div>
   );
 };
