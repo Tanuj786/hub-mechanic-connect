@@ -33,8 +33,11 @@ import {
   Trophy,
   Volume2,
   VolumeX,
-  MessageSquare
+  MessageSquare,
+  Camera,
+  Upload
 } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 
 interface ShopData {
@@ -90,7 +93,9 @@ const MechanicDashboard = () => {
     full_name: '',
     email: '',
     phone_number: '',
+    avatar_url: '',
   });
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
   // Modal states
   const [selectedJob, setSelectedJob] = useState<ServiceRequest | null>(null);
@@ -140,6 +145,7 @@ const MechanicDashboard = () => {
           full_name: profileRes.data.full_name || '',
           email: profileRes.data.email || '',
           phone_number: profileRes.data.phone_number || '',
+          avatar_url: profileRes.data.avatar_url || '',
         });
       }
       setPendingRequests(pendingRes.data || []);
@@ -291,11 +297,39 @@ const MechanicDashboard = () => {
   };
 
   const declineJob = async (requestId: string) => {
-    // Simply remove from local state - the request stays pending for other mechanics
+    if (!user) return;
+    
+    // Get the request details before removing
+    const request = pendingRequests.find(r => r.id === requestId);
+    
+    // Update the request status to cancelled
+    const { error } = await supabase.from('service_requests').update({
+      status: 'cancelled',
+      mechanic_id: user.id,
+      updated_at: new Date().toISOString()
+    }).eq('id', requestId);
+
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to decline request', variant: 'destructive' });
+      return;
+    }
+
+    // Notify the customer
+    if (request) {
+      await supabase.from('notifications').insert({
+        user_id: request.customer_id,
+        title: 'Request Declined',
+        message: 'Unfortunately, the mechanic could not accept your request. Please try requesting another mechanic.',
+        type: 'job_update',
+        related_request_id: requestId,
+      });
+    }
+
+    // Remove from local state
     setPendingRequests(prev => prev.filter(r => r.id !== requestId));
-    toast({ 
-      title: 'Request Declined', 
-      description: 'The request has been removed from your queue.' 
+    toast({
+      title: 'Request Declined',
+      description: 'The customer has been notified.'
     });
   };
 
@@ -310,10 +344,54 @@ const MechanicDashboard = () => {
     const { error } = await supabase.from('profiles').update({
       full_name: profile.full_name,
       phone_number: profile.phone_number,
+      avatar_url: profile.avatar_url,
       updated_at: new Date().toISOString(),
     }).eq('id', user.id);
 
     toast(error ? { title: 'Error', description: 'Failed to save profile', variant: 'destructive' } : { title: 'Profile Saved', description: 'Your profile has been updated.' });
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user || !event.target.files || event.target.files.length === 0) return;
+    
+    const file = event.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${user.id}/avatar.${fileExt}`;
+    
+    setUploadingAvatar(true);
+    
+    try {
+      // Delete old avatar if exists
+      await supabase.storage.from('avatars').remove([`${user.id}/avatar.png`, `${user.id}/avatar.jpg`, `${user.id}/avatar.jpeg`]);
+      
+      // Upload new avatar
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+      
+      if (uploadError) throw uploadError;
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+      
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase.from('profiles').update({
+        avatar_url: publicUrl,
+        updated_at: new Date().toISOString(),
+      }).eq('id', user.id);
+      
+      if (updateError) throw updateError;
+      
+      setProfile(prev => ({ ...prev, avatar_url: publicUrl }));
+      toast({ title: 'Photo Updated', description: 'Your profile photo has been updated.' });
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast({ title: 'Error', description: 'Failed to upload photo', variant: 'destructive' });
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const handleSignOut = async () => {
@@ -597,6 +675,39 @@ const MechanicDashboard = () => {
             <motion.div key="profile" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6 max-w-md">
               <h2 className="text-3xl font-bold">Profile</h2>
               <AnimatedCard className="p-6 space-y-4">
+                {/* Avatar Upload Section */}
+                <div className="flex flex-col items-center mb-6">
+                  <div className="relative">
+                    <Avatar className="h-24 w-24 border-4 border-primary/20">
+                      {profile.avatar_url ? (
+                        <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
+                      ) : null}
+                      <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold">
+                        {profile.full_name ? profile.full_name.charAt(0).toUpperCase() : 'M'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <label 
+                      htmlFor="avatar-upload" 
+                      className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors shadow-lg"
+                    >
+                      {uploadingAvatar ? (
+                        <Loader2 className="h-4 w-4 text-primary-foreground animate-spin" />
+                      ) : (
+                        <Camera className="h-4 w-4 text-primary-foreground" />
+                      )}
+                    </label>
+                    <input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                      disabled={uploadingAvatar}
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">Click to upload photo</p>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Full Name</Label>
                   <Input id="fullName" value={profile.full_name} onChange={(e) => setProfile({ ...profile, full_name: e.target.value })} className="input-field" />
