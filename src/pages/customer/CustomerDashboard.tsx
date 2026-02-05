@@ -40,8 +40,11 @@ import {
   Loader2,
   Wrench,
   History,
-  Bot
+  Bot,
+  Phone,
+  User
 } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -66,6 +69,7 @@ interface ServiceRequest {
   mechanic?: {
     full_name: string;
     phone_number: string;
+    avatar_url?: string;
   };
 }
 
@@ -122,7 +126,7 @@ const CustomerDashboard = () => {
     try {
       const [historyRes, notifRes, invoiceRes] = await Promise.all([
         supabase.from('service_requests')
-          .select('id, status, created_at, mechanic_id, description, customer_address, service_type:service_types(name), mechanic:profiles!mechanic_id(full_name, phone_number)')
+          .select('id, status, created_at, mechanic_id, description, customer_address, service_type:service_types(name), mechanic:profiles!mechanic_id(full_name, phone_number, avatar_url)')
           .eq('customer_id', user.id)
           .order('created_at', { ascending: false }),
         supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
@@ -411,22 +415,71 @@ const CustomerDashboard = () => {
                           <div className="flex items-start justify-between mb-4">
                             <div>
                               <h4 className="font-bold text-lg">{service.service_type?.name || 'Service'}</h4>
-                              {service.mechanic && (
-                                <p className="text-muted-foreground flex items-center gap-2 mt-1">
-                                  <Star className="h-4 w-4 text-warning" />
-                                  {service.mechanic.full_name}
-                                </p>
-                              )}
                             </div>
                             <Badge className={`status-badge ${service.status}`}>{service.status.replace('_', ' ')}</Badge>
                           </div>
 
-                          {/* Status Timeline */}
-                          <div className="mb-4 p-4 bg-secondary/30 rounded-xl">
-                            <JobStatusTimeline currentStatus={getTimelineStatus(service.status)} />
-                          </div>
+                          {/* Mechanic Profile Card */}
+                          {service.mechanic && service.status !== 'cancelled' && (
+                            <div className="mb-4 p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                              <p className="text-xs text-muted-foreground mb-2">Your Assigned Mechanic</p>
+                              <div className="flex items-center gap-4">
+                                <Avatar className="h-16 w-16 border-2 border-primary/30">
+                                  {service.mechanic.avatar_url ? (
+                                    <AvatarImage src={service.mechanic.avatar_url} alt={service.mechanic.full_name} />
+                                  ) : null}
+                                  <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">
+                                    {service.mechanic.full_name.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                  <p className="font-bold text-lg">{service.mechanic.full_name}</p>
+                                  {service.mechanic.phone_number && (
+                                    <a 
+                                      href={`tel:${service.mechanic.phone_number}`}
+                                      className="text-sm text-primary flex items-center gap-1 hover:underline"
+                                    >
+                                      <Phone className="h-3 w-3" />
+                                      {service.mechanic.phone_number}
+                                    </a>
+                                  )}
+                                </div>
+                                {service.mechanic.phone_number && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => window.open(`tel:${service.mechanic.phone_number}`)}
+                                    className="border-primary/30 hover:bg-primary/10"
+                                  >
+                                    <Phone className="h-4 w-4 mr-1" />
+                                    Call
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          )}
 
-                          {service.mechanic_id && (
+                          {/* Cancelled Status Message */}
+                          {service.status === 'cancelled' && (
+                            <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-xl">
+                              <div className="flex items-center gap-2 text-destructive">
+                                <XCircle className="h-5 w-5" />
+                                <p className="font-medium">Request was declined</p>
+                              </div>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                The mechanic was unable to accept this request. Please create a new service request.
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Status Timeline */}
+                          {service.status !== 'cancelled' && (
+                            <div className="mb-4 p-4 bg-secondary/30 rounded-xl">
+                              <JobStatusTimeline currentStatus={getTimelineStatus(service.status)} />
+                            </div>
+                          )}
+
+                          {service.mechanic_id && service.status !== 'cancelled' && (
                             <Button variant="outline" onClick={() => openChat(service)} className="w-full">
                               <MessageSquare className="mr-2 h-4 w-4" />
                               Chat with Mechanic
