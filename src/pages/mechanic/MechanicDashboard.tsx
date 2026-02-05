@@ -290,6 +290,15 @@ const MechanicDashboard = () => {
     setShowChat(true);
   };
 
+  const declineJob = async (requestId: string) => {
+    // Simply remove from local state - the request stays pending for other mechanics
+    setPendingRequests(prev => prev.filter(r => r.id !== requestId));
+    toast({ 
+      title: 'Request Declined', 
+      description: 'The request has been removed from your queue.' 
+    });
+  };
+
   const updateSettings = async (key: string, value: boolean) => {
     if (!user) return;
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -488,6 +497,7 @@ const MechanicDashboard = () => {
                         estimatedCost={request.estimated_cost || undefined}
                         viewMode="mechanic"
                         onAccept={() => acceptJob(request.id)}
+                        onReject={() => declineJob(request.id)}
                         onCall={() => window.open(`tel:${request.customer?.phone_number}`)}
                         isAccepting={acceptingJobId === request.id}
                       />
