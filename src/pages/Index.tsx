@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Car, Wrench, MapPin, Clock, Star, Shield, Zap, Phone, CheckCircle } from 'lucide-react';
-import madat24Logo from '@/assets/madat24-mascot-logo.png';
+import madat24Logo from '@/assets/madat24-logo.png';
 
 const Index = () => {
   return (
