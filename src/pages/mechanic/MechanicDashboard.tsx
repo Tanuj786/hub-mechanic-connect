@@ -15,6 +15,7 @@ import { ServiceRequestCard, JobStatus } from '@/components/jobs/ServiceRequestC
 import { JobCompletionModal } from '@/components/jobs/JobCompletionModal';
 import { IncomingRequestAlert } from '@/components/service-request/IncomingRequestAlert';
 import { MechanicReviewsList } from '@/components/reviews/MechanicReviewsList';
+import { LiveTrackingMap } from '@/components/map/LiveTrackingMap';
 import { 
   LayoutDashboard, 
   Bell, 
@@ -594,24 +595,34 @@ const MechanicDashboard = () => {
                   </h3>
                   <div className="grid gap-4">
                     {activeJobs.map((job) => (
-                      <ServiceRequestCard
-                        key={job.id}
-                        id={job.id}
-                        status={job.status as JobStatus}
-                        serviceName={job.service_type?.name || 'Service'}
-                        customerName={job.customer?.full_name || 'Customer'}
-                        customerPhone={job.customer?.phone_number}
-                        address={job.customer_address}
-                        description={job.description}
-                        vehicleType={job.vehicle_type}
-                        createdAt={job.created_at}
-                        viewMode="mechanic"
-                        onStartJob={() => startJob(job.id)}
-                        onCompleteJob={() => openCompletionModal(job)}
-                        onOpenChat={() => openChat(job)}
-                        onCall={() => window.open(`tel:${job.customer?.phone_number}`)}
-                        isStarting={startingJobId === job.id}
-                      />
+                      <div key={job.id} className="space-y-4">
+                        <ServiceRequestCard
+                          id={job.id}
+                          status={job.status as JobStatus}
+                          serviceName={job.service_type?.name || 'Service'}
+                          customerName={job.customer?.full_name || 'Customer'}
+                          customerPhone={job.customer?.phone_number}
+                          address={job.customer_address}
+                          description={job.description}
+                          vehicleType={job.vehicle_type}
+                          createdAt={job.created_at}
+                          viewMode="mechanic"
+                          onStartJob={() => startJob(job.id)}
+                          onCompleteJob={() => openCompletionModal(job)}
+                          onOpenChat={() => openChat(job)}
+                          onCall={() => window.open(`tel:${job.customer?.phone_number}`)}
+                          isStarting={startingJobId === job.id}
+                        />
+                        {/* Live Tracking Map for active jobs */}
+                        <LiveTrackingMap
+                          serviceRequestId={job.id}
+                          customerLocation={null}
+                          mechanicId={user?.id || null}
+                          customerName={job.customer?.full_name || 'Customer'}
+                          mechanicName="You"
+                          viewerRole="mechanic"
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>
