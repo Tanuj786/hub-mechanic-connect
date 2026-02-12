@@ -16,6 +16,7 @@ import { InvoiceCard } from '@/components/jobs/InvoiceCard';
 import { CustomerMediaUpload } from '@/components/media/CustomerMediaUpload';
 import { ReviewModal } from '@/components/reviews/ReviewModal';
 import { CustomerHistory } from '@/components/customer/CustomerHistory';
+import { LiveTrackingMap } from '@/components/map/LiveTrackingMap';
 import { 
   LayoutDashboard, 
   Search, 
@@ -476,6 +477,20 @@ const CustomerDashboard = () => {
                           {service.status !== 'cancelled' && (
                             <div className="mb-4 p-4 bg-secondary/30 rounded-xl">
                               <JobStatusTimeline currentStatus={getTimelineStatus(service.status)} />
+                            </div>
+                          )}
+
+                          {/* Live Tracking Map */}
+                          {service.mechanic_id && ['accepted', 'in_progress'].includes(service.status) && (
+                            <div className="mb-4">
+                              <LiveTrackingMap
+                                serviceRequestId={service.id}
+                                customerLocation={location}
+                                mechanicId={service.mechanic_id}
+                                customerName="You"
+                                mechanicName={service.mechanic?.full_name || 'Mechanic'}
+                                viewerRole="customer"
+                              />
                             </div>
                           )}
 
