@@ -94,6 +94,42 @@ export type Database = {
           },
         ]
       }
+      geo_zones: {
+        Row: {
+          alert_message: string
+          center_latitude: number
+          center_longitude: number
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          radius_km: number
+          zone_type: string
+        }
+        Insert: {
+          alert_message?: string
+          center_latitude: number
+          center_longitude: number
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          radius_km?: number
+          zone_type?: string
+        }
+        Update: {
+          alert_message?: string
+          center_latitude?: number
+          center_longitude?: number
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          radius_km?: number
+          zone_type?: string
+        }
+        Relationships: []
+      }
       invoice_items: {
         Row: {
           created_at: string
@@ -445,6 +481,36 @@ export type Database = {
           },
         ]
       }
+      pricing_rules: {
+        Row: {
+          condition_value: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          multiplier: number
+          rule_name: string
+          rule_type: string
+        }
+        Insert: {
+          condition_value?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          multiplier?: number
+          rule_name: string
+          rule_type?: string
+        }
+        Update: {
+          condition_value?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          multiplier?: number
+          rule_name?: string
+          rule_type?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -617,22 +683,28 @@ export type Database = {
       }
       service_types: {
         Row: {
+          base_price: number | null
           created_at: string | null
           icon: string | null
           id: string
           name: string
+          night_multiplier: number | null
         }
         Insert: {
+          base_price?: number | null
           created_at?: string | null
           icon?: string | null
           id?: string
           name: string
+          night_multiplier?: number | null
         }
         Update: {
+          base_price?: number | null
           created_at?: string | null
           icon?: string | null
           id?: string
           name?: string
+          night_multiplier?: number | null
         }
         Relationships: []
       }
