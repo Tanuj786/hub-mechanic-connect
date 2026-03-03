@@ -17,6 +17,8 @@ import { CustomerMediaUpload } from '@/components/media/CustomerMediaUpload';
 import { ReviewModal } from '@/components/reviews/ReviewModal';
 import { CustomerHistory } from '@/components/customer/CustomerHistory';
 import { LiveTrackingMap } from '@/components/map/LiveTrackingMap';
+import { GeoFenceAlert } from '@/components/geo-fencing/GeoFenceAlert';
+import { SmartPriceEstimator } from '@/components/pricing/SmartPriceEstimator';
 import { 
   LayoutDashboard, 
   Search, 
@@ -309,6 +311,9 @@ const CustomerDashboard = () => {
                 <motion.h2 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="text-3xl font-bold">Welcome Back! 👋</motion.h2>
                 <NotificationBell />
               </div>
+
+              {/* Geo-Fencing Alert */}
+              <GeoFenceAlert onFindMechanic={() => navigate('/customer/find-mechanic')} />
 
               {/* Status Cards */}
               <StaggerContainer className="grid grid-cols-3 gap-4">

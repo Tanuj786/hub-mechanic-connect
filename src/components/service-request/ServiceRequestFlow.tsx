@@ -35,6 +35,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { CustomerMediaUpload } from '@/components/media/CustomerMediaUpload';
+import { SmartPriceEstimator } from '@/components/pricing/SmartPriceEstimator';
 
 type VehicleType = 'car' | 'bike' | 'electric' | 'battery' | 'tyre' | 'general';
 type FlowStep = 'location' | 'vehicle' | 'service' | 'description' | 'searching' | 'found' | 'confirmed';
@@ -481,6 +482,16 @@ export const ServiceRequestFlow = ({ onRequestCreated }: ServiceRequestFlowProps
               <h4 className="font-medium mb-3">Add Photos (Optional)</h4>
               <CustomerMediaUpload onMediaChange={setMediaFiles} maxFiles={5} />
             </div>
+
+            {/* Smart Price Estimate */}
+            {selectedService && (
+              <SmartPriceEstimator
+                serviceTypeId={selectedService.id}
+                serviceTypeName={selectedService.name}
+                userLocation={location}
+                className="mb-2"
+              />
+            )}
 
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => setStep('service')} className="flex-1">
