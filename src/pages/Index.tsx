@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Car, Wrench, MapPin, Clock, Star, Shield, Zap, Phone, CheckCircle } from 'lucide-react';
+import { Car, Wrench, MapPin, Clock, Star, Shield, Zap, Phone, CheckCircle, Building2 } from 'lucide-react';
 import madat24Logo from '@/assets/madat24-logo.png';
 
 const Index = () => {
@@ -39,11 +39,11 @@ const Index = () => {
           >
             <img src={madat24Logo} alt="Madat24" className="h-12 w-auto" />
           </motion.div>
-          <motion.div 
+           <motion.div 
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
-            className="flex gap-4"
+            className="flex gap-3 flex-wrap"
           >
             <Link to="/customer/login">
               <Button variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10">
@@ -53,6 +53,11 @@ const Index = () => {
             <Link to="/mechanic/login">
               <Button variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10">
                 Mechanic Login
+              </Button>
+            </Link>
+            <Link to="/corporate/login">
+              <Button variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10">
+                <Building2 className="h-4 w-4 mr-1" /> Corporate
               </Button>
             </Link>
             <Link to="/mechanic/register">
