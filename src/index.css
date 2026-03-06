@@ -275,3 +275,15 @@
     opacity: 1;
   }
 }
+
+/* Fix Leaflet map z-index overlapping modals/dialogs */
+.leaflet-container {
+  z-index: 0 !important;
+}
+.leaflet-pane {
+  z-index: 0 !important;
+}
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 1 !important;
+}
