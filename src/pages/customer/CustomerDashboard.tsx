@@ -279,6 +279,7 @@ const CustomerDashboard = () => {
             { id: 'history', icon: History, label: 'History' },
             { id: 'invoices', icon: CreditCard, label: 'Invoices', badge: pendingInvoices.length },
             { id: 'notifications', icon: Bell, label: 'Notifications', badge: notifications.filter(n => !n.is_read).length },
+            { id: 'profile', icon: User, label: 'My Profile' },
           ].map((item) => (
             <motion.button
               key={item.id}
