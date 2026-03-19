@@ -16,6 +16,7 @@ import { InvoiceCard } from '@/components/jobs/InvoiceCard';
 import { CustomerMediaUpload } from '@/components/media/CustomerMediaUpload';
 import { ReviewModal } from '@/components/reviews/ReviewModal';
 import { CustomerHistory } from '@/components/customer/CustomerHistory';
+import { CustomerProfileSection } from '@/components/customer/CustomerProfileSection';
 import { LiveTrackingMap } from '@/components/map/LiveTrackingMap';
 import { GeoFenceAlert } from '@/components/geo-fencing/GeoFenceAlert';
 import { SmartPriceEstimator } from '@/components/pricing/SmartPriceEstimator';
