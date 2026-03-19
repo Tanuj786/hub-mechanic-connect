@@ -646,6 +646,8 @@ const CustomerDashboard = () => {
               )}
             </motion.div>
           )}
+
+          {activeNav === 'profile' && <CustomerProfileSection />}
         </AnimatePresence>
       </main>
 
