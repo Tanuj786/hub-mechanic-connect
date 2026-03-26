@@ -37,7 +37,7 @@ const Index = () => {
             transition={{ duration: 0.5 }}
             className="flex items-center gap-2"
           >
-            <img src={madat24Logo} alt="Madat24" className="h-12 w-auto" />
+            <img src={madat24Logo} alt="Madat24" className="h-16 w-auto drop-shadow-lg" />
           </motion.div>
            <motion.div 
             initial={{ opacity: 0, x: 20 }}
@@ -402,7 +402,7 @@ const Index = () => {
               viewport={{ once: true }}
               className="flex items-center gap-2 mb-4 md:mb-0"
             >
-              <img src={madat24Logo} alt="Madat24" className="h-10 w-auto" />
+              <img src={madat24Logo} alt="Madat24" className="h-14 w-auto drop-shadow-lg" />
             </motion.div>
             <motion.p
               initial={{ opacity: 0 }}
