@@ -14,58 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      bulk_service_requests: {
-        Row: {
-          batch_id: string | null
-          corporate_id: string
-          created_at: string
-          fleet_vehicle_id: string | null
-          id: string
-          notes: string | null
-          service_request_id: string
-        }
-        Insert: {
-          batch_id?: string | null
-          corporate_id: string
-          created_at?: string
-          fleet_vehicle_id?: string | null
-          id?: string
-          notes?: string | null
-          service_request_id: string
-        }
-        Update: {
-          batch_id?: string | null
-          corporate_id?: string
-          created_at?: string
-          fleet_vehicle_id?: string | null
-          id?: string
-          notes?: string | null
-          service_request_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bulk_service_requests_corporate_id_fkey"
-            columns: ["corporate_id"]
-            isOneToOne: false
-            referencedRelation: "corporate_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bulk_service_requests_fleet_vehicle_id_fkey"
-            columns: ["fleet_vehicle_id"]
-            isOneToOne: false
-            referencedRelation: "fleet_vehicles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bulk_service_requests_service_request_id_fkey"
-            columns: ["service_request_id"]
-            isOneToOne: false
-            referencedRelation: "service_requests"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       chat_messages: {
         Row: {
           created_at: string
@@ -108,59 +56,6 @@ export type Database = {
           },
         ]
       }
-      corporate_accounts: {
-        Row: {
-          active_requests: number
-          address: string | null
-          company_email: string | null
-          company_name: string
-          company_phone: string | null
-          created_at: string
-          gst_number: string | null
-          id: string
-          total_spent: number
-          total_vehicles: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          active_requests?: number
-          address?: string | null
-          company_email?: string | null
-          company_name: string
-          company_phone?: string | null
-          created_at?: string
-          gst_number?: string | null
-          id?: string
-          total_spent?: number
-          total_vehicles?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          active_requests?: number
-          address?: string | null
-          company_email?: string | null
-          company_name?: string
-          company_phone?: string | null
-          created_at?: string
-          gst_number?: string | null
-          id?: string
-          total_spent?: number
-          total_vehicles?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "corporate_accounts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       customer_addresses: {
         Row: {
           address: string
@@ -195,62 +90,6 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      fleet_vehicles: {
-        Row: {
-          corporate_id: string
-          created_at: string
-          driver_name: string | null
-          driver_phone: string | null
-          id: string
-          is_active: boolean
-          last_service_at: string | null
-          total_cost: number
-          total_services: number
-          updated_at: string
-          vehicle_name: string
-          vehicle_number: string
-          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
-        }
-        Insert: {
-          corporate_id: string
-          created_at?: string
-          driver_name?: string | null
-          driver_phone?: string | null
-          id?: string
-          is_active?: boolean
-          last_service_at?: string | null
-          total_cost?: number
-          total_services?: number
-          updated_at?: string
-          vehicle_name: string
-          vehicle_number: string
-          vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
-        }
-        Update: {
-          corporate_id?: string
-          created_at?: string
-          driver_name?: string | null
-          driver_phone?: string | null
-          id?: string
-          is_active?: boolean
-          last_service_at?: string | null
-          total_cost?: number
-          total_services?: number
-          updated_at?: string
-          vehicle_name?: string
-          vehicle_number?: string
-          vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fleet_vehicles_corporate_id_fkey"
-            columns: ["corporate_id"]
-            isOneToOne: false
-            referencedRelation: "corporate_accounts"
             referencedColumns: ["id"]
           },
         ]
