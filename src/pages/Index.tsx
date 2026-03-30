@@ -55,11 +55,6 @@ const Index = () => {
                 Mechanic Login
               </Button>
             </Link>
-            <Link to="/corporate/login">
-              <Button variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10">
-                <Building2 className="h-4 w-4 mr-1" /> Corporate
-              </Button>
-            </Link>
             <Link to="/mechanic/register">
               <Button className="gradient-accent border-0 shadow-accent">
                 Register Shop

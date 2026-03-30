@@ -23,10 +23,6 @@ import ShopDetails from "./pages/mechanic/ShopDetails";
 import ServicesOffered from "./pages/mechanic/ServicesOffered";
 import MechanicDashboard from "./pages/mechanic/MechanicDashboard";
 
-// Corporate Pages
-import CorporateLogin from "./pages/corporate/CorporateLogin";
-import CorporateSignup from "./pages/corporate/CorporateSignup";
-import CorporateDashboard from "./pages/corporate/CorporateDashboard";
 
 const queryClient = new QueryClient();
 
@@ -94,15 +90,6 @@ const AppRoutes = () => {
       } />
       <Route path="/mechanic/forgot-password" element={<ForgotPassword />} />
       
-      {/* Corporate Routes */}
-      <Route path="/corporate/login" element={<CorporateLogin />} />
-      <Route path="/corporate/signup" element={<CorporateSignup />} />
-      <Route path="/corporate/forgot-password" element={<ForgotPassword />} />
-      <Route path="/corporate/dashboard" element={
-        <ProtectedRoute>
-          <CorporateDashboard />
-        </ProtectedRoute>
-      } />
       
       {/* Catch-all */}
       <Route path="*" element={<NotFound />} />
